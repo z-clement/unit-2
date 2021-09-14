@@ -36,7 +36,48 @@ function onEachFeature(feature, layer) {
             }
             popupInfo += "<p>" + cleanName + ": " + feature.properties[property] + "</p>";
         }
+        // add another line that converts trip duration to minutes, rounded to the nearest integer
+        let min = Math.round(feature.properties["trip_duration"] / 60);
+        popupInfo += "<p>Trip Duration (min): " + min + "</p>";
         layer.bindPopup(popupInfo);
+    }
+}
+
+// function to turn the markers to circle markers
+function pointtoCircle(feature, latlng) {
+    let fillColor;
+    // make the fill color variable depending on the ride duration
+    if (feature.properties["trip_duration"] < (5 * 60)) {
+        fillColor = "#a1fc03";
+    } else if (feature.properties["trip_duration"] < (10 * 60)) {
+        fillColor = "#f5da42";
+    } else if (feature.properties["trip_duration"] < (15 * 60)) {
+        fillColor = "#f5b342";
+    } else if (feature.properties["trip_duration"] < (20 * 60)) {
+        fillColor = "#f58a42";
+    } else {
+        fillColor = "#f55142";
+    }
+
+    // define the options for making the circles on the map
+    let circleOptions = {
+        radius: 5,
+        fillColor: fillColor,
+        color: "#000",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.8
+    };
+
+    return L.circleMarker(latlng, circleOptions);
+}
+
+// function to filter the taxi rides so that we only see ones with over 3 people
+function filterLargeRides(feature) {
+    if (feature.properties["passenger_count"] > 3) {
+        return true;
+    } else {
+        return false;
     }
 }
 
@@ -45,7 +86,9 @@ function getData(map) {
     $.getJSON("data/pickup_sample.geojson", function(response) {
         // create a leaflet geoJSON layer and put it on the map
         L.geoJson(response, {
-            onEachFeature: onEachFeature
+            onEachFeature: onEachFeature,
+            pointToLayer: pointtoCircle,
+            filter: filterLargeRides
         }).addTo(map);
     });
 }
